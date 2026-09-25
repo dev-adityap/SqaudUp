@@ -1,17 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, ChevronRight } from 'lucide-react';
-import { sportsData } from '../data/sports';
-import { gamesData } from '../data/games';
 import GameCard from '../components/game/GameCard';
+
+// Hardcoded beautiful sports categories for the landing page grid
+const liveSportsData = [
+  { id: 'football', name: 'Football', activeGames: 34, image: 'https://images.unsplash.com/photo-1653332369957-bec2dd263112?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
+  { id: 'cricket', name: 'Cricket', activeGames: 28, image: 'https://plus.unsplash.com/premium_photo-1721963696751-0e8c3ac42f9d?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
+  { id: 'basketball', name: 'Basketball', activeGames: 19, image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=1200&auto=format&fit=crop' },
+  { id: 'badminton', name: 'Badminton', activeGames: 12, image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1200&auto=format&fit=crop' },
+  { id: 'tennis', name: 'Tennis', activeGames: 8, image: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?q=80&w=1200&auto=format&fit=crop' },
+];
 
 export default function LandingPage() {
   const [matchStep, setMatchStep] = useState(0);
-  const [invited, setInvited] = useState(false);
+  const [liveGames, setLiveGames] = useState([]);
 
   useEffect(() => {
     const timer = setInterval(() => setMatchStep((prev) => (prev < 4 ? prev + 1 : 4)), 900);
     return () => clearInterval(timer);
+  }, []);
+
+  // Fetch the newly seeded games from MongoDB for the bottom section!
+  useEffect(() => {
+    const fetchGames = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/games');
+        const data = await response.json();
+        const games = data.data || data || [];
+        // Only show the first 3 games on the landing page to keep it clean
+        setLiveGames(games.slice(0, 3)); 
+      } catch (error) {
+        console.error("Error fetching live games:", error);
+      }
+    };
+    fetchGames();
   }, []);
 
   return (
@@ -45,7 +68,7 @@ export default function LandingPage() {
             <div className="lg:col-span-5 relative">
               <div className="rounded-2xl overflow-hidden border border-neutral-800 aspect-[4/5] bg-neutral-900 shadow-2xl">
                 <img
-                  src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=900&auto=format&fit=crop"
+                  src="https://images.unsplash.com/photo-1778608705821-0a699c0cfe48?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                   alt="Sports action"
                   className="w-full h-full object-cover"
                 />
@@ -60,7 +83,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl sm:text-6xl font-display font-black text-white mb-10">PLAY YOUR SPORT.</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {sportsData.map((sport, index) => (
+            {liveSportsData.map((sport, index) => (
               <Link
                 to={`/sports/${sport.id}`}
                 key={sport.id}
@@ -112,11 +135,16 @@ export default function LandingPage() {
       <section className="py-20 bg-[#08080a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl sm:text-6xl font-display font-black text-white mb-10">GAMES NEAR YOU.</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {gamesData.map((game) => (
-              <GameCard key={game.id} game={game} />
-            ))}
-          </div>
+          
+          {liveGames.length === 0 ? (
+            <div className="text-neutral-500 font-bold">Loading live games...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {liveGames.map((game) => (
+                <GameCard key={game._id} game={game} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>
