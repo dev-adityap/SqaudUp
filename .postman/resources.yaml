@@ -1,0 +1,10 @@
+# Use this workspace to collaborate
+workspace:
+  id: f63c1908-71ed-4699-8e9a-8ab158dd3f24
+
+localResources:
+  collections: []
+
+cloudResources:
+  collections:
+    ../postman/collections/SqaudUp API - Phase 2: 3766f487-d8e1-47aa-b5a0-4bf45b2d8dfe

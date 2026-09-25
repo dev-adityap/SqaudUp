@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{baseUrl}}/games"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"hostId":"u1","sport":"Football","title":"Test Match","venue":"Turf","location":{"type":"Point","coordinates":[88.4,22.5]},"date":"2026-10-10","startTime":"18:00","endTime":"19:00","skillLevel":"Casual","maxPlayers":10}'
+order: 2000

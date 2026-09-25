@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{baseUrl}}/games/g1/join"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"userId":"u2"}'
+order: 3000

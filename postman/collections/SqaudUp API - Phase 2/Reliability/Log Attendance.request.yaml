@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{baseUrl}}/reliability/attendance"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"userId":"u2","gameId":"g1","event":"NO_SHOW"}'
+order: 1000
