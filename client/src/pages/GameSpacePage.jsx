@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Shield, MessageSquare, Users, ArrowLeft } from 'lucide-react';
+import WeatherBadge from '../components/WeatherBadge';
+import { Shield, MessageSquare, Users, ArrowLeft, MapPin } from 'lucide-react';
 
 export default function GameSpacePage() {
   const { id } = useParams();
@@ -105,14 +106,30 @@ export default function GameSpacePage() {
         <ArrowLeft className="w-4 h-4" /> Back to Dashboard
       </button>
 
-      <div className="flex items-center justify-between mb-6">
+     <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-4xl font-display font-black text-white uppercase">{game.title} - SQUAD SPACE</h1>
-          <p className="text-[#ff5500] font-bold text-sm mt-1">{game.venue} • {game.startTime}</p>
+        {/* Dynamic Google Maps Link */}
+          <div className="flex items-center gap-2 mt-1">
+            <a 
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(game.venue + ' Kolkata')}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-[#ff5500] font-bold text-sm flex items-center gap-1 hover:underline hover:text-white transition cursor-pointer"
+            >
+              <MapPin className="w-4 h-4" /> {game.venue}
+            </a>
+            <span className="text-neutral-500 font-bold text-sm">• {game.startTime}</span>
+          </div>
+          <div className="mt-3">
+            <span className="bg-neutral-800 px-4 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider border border-neutral-700 mr-3">
+              {game.sport}
+            </span>
+          </div>
         </div>
-        <span className="bg-neutral-800 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider border border-neutral-700">
-          {game.sport}
-        </span>
+        
+        {/* The New Weather Badge */}
+        <WeatherBadge location="Kolkata" /> 
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
