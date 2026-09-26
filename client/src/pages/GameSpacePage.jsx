@@ -38,6 +38,55 @@ export default function GameSpacePage() {
     fetchGameSpace();
   }, [id]);
 
+  const [isAiTyping, setIsAiTyping] = useState(false);
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const userText = chatInput;
+    setChatInput(''); // Clear the input box instantly
+
+    // 1. Instantly show the user's message in the chat UI
+    setMessages(prev => [...prev, { 
+      id: Date.now(), 
+      sender: 'You', 
+      text: userText, 
+      isAi: false 
+    }]);
+
+    setIsAiTyping(true);
+
+    try {
+      // 2. Send the message to your new Gemini backend route
+      const response = await fetch('http://localhost:5000/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: userText })
+      });
+
+      const data = await response.json();
+
+      // 3. Print the AI's reply to the chat UI
+      setMessages(prev => [...prev, { 
+        id: Date.now() + 1, 
+        sender: 'SquadUp AI', 
+        text: data.success ? data.text : 'Sorry, my AI brain just glitch out.', 
+        isAi: true 
+      }]);
+    } catch (error) {
+      console.error("AI Chat Error:", error);
+      setMessages(prev => [...prev, { 
+        id: Date.now() + 1, 
+        sender: 'SquadUp AI', 
+        text: 'Error connecting to the AI server. Is the backend running?', 
+        isAi: true 
+      }]);
+    } finally {
+      setIsAiTyping(false);
+    }
+  };
+
   const getEquipment = (sport) => {
     const lowerSport = sport?.toLowerCase() || '';
     if (lowerSport === 'football') return ['Turf Boots / Studs', 'Shin Guards', 'Water Bottle', 'Team Jersey (Dark/Light)'];
@@ -103,6 +152,7 @@ export default function GameSpacePage() {
         </div>
 
         {/* RIGHT COLUMN: AI Chat */}
+{/* RIGHT COLUMN: AI Chat */}
         <div className="lg:col-span-2 bg-[#0f0f13] border border-neutral-800 rounded-2xl flex flex-col overflow-hidden">
           <div className="bg-neutral-900 border-b border-neutral-800 p-4 flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-[#ff5500]" />
@@ -120,7 +170,15 @@ export default function GameSpacePage() {
             ))}
           </div>
 
-          <form className="p-4 border-t border-neutral-800 bg-neutral-900/50" onSubmit={(e) => e.preventDefault()}>
+          {/* Typing Indicator */}
+          {isAiTyping && (
+            <div className="px-4 pb-2 text-xs text-[#ff5500] font-bold italic opacity-75">
+              SquadUp AI is typing...
+            </div>
+          )}
+
+          {/* THE SINGLE, CORRECT FORM */}
+          <form className="p-4 border-t border-neutral-800 bg-neutral-900/50" onSubmit={handleSendMessage}>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -128,8 +186,13 @@ export default function GameSpacePage() {
                 onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Message the squad or ask the AI..."
                 className="flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#ff5500]"
+                disabled={isAiTyping}
               />
-              <button className="bg-[#ff5500] text-white px-6 font-bold rounded-xl hover:bg-[#ff6611] transition">
+              <button 
+                type="submit"
+                disabled={isAiTyping} 
+                className="bg-[#ff5500] text-white px-6 font-bold rounded-xl hover:bg-[#ff6611] transition disabled:opacity-50"
+              >
                 Send
               </button>
             </div>

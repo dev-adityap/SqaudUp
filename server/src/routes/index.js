@@ -6,6 +6,12 @@ const matchController = require('../controllers/matchController');
 const inviteController = require('../controllers/inviteController');
 const notifController = require('../controllers/notifController');
 const reliabilityController = require('../controllers/reliabilityController');
+// Add this near your other controller imports at the top
+const aiController = require('../controllers/aiController');
+
+// Add this route anywhere in the file
+// AI Chat
+router.post('/ai/chat', aiController.askGemini);
 
 // Health Check
 router.get('/health', (req, res) => {
@@ -35,5 +41,6 @@ router.post('/notifications/:id/read', notifController.markAsRead);
 // Reliability
 router.get('/reliability/:userId', reliabilityController.getReliabilityStats);
 router.post('/reliability/attendance', reliabilityController.logAttendance);
+router.post('/ai/chat', aiController.askGemini);
 
 module.exports = router;
