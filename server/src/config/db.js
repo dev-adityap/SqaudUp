@@ -1,11 +1,12 @@
 const mongoose = require('mongoose');
+const logger = require('../utils/logger');
 
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI);
-    console.log(`[SqaudUp DB] MongoDB Connected: ${conn.connection.host}`);
+    logger.info(`[SqaudUp DB] MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`[SqaudUp DB] Error: ${error.message}`);
+    logger.error(`[SqaudUp DB] Error: ${error.message}`);
     process.exit(1);
   }
 };

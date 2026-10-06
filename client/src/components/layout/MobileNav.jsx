@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Bell, User, Settings } from 'lucide-react';
+import { Logo, LogoWord } from '../Logo';
 
 export default function MobileNav({ isOpen, onClose, links }) {
   const location = useLocation();
@@ -26,9 +27,8 @@ export default function MobileNav({ isOpen, onClose, links }) {
           >
             <div>
               <div className="flex items-center justify-between pb-6 border-b border-neutral-800">
-                <span className="font-display font-black text-xl text-white">
-                  SQAUD<span className="text-[#ff5500]">UP</span>
-                </span>
+                <Logo size="sm" showWord={false} />
+                <LogoWord className="text-xl" />
                 <button onClick={onClose} className="p-1.5 text-neutral-400 hover:text-white">
                   <X className="w-6 h-6" />
                 </button>

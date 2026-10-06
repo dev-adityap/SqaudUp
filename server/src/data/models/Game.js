@@ -15,8 +15,17 @@ const gameSchema = new mongoose.Schema({
   skillLevel: { type: String, enum: ['Casual', 'Intermediate', 'Competitive'], required: true },
   maxPlayers: { type: Number, required: true },
   players: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  // Per-player attendance. Kept separate from `players` so that join/leave logic
+  // never has to reason about a heterogeneous array.
+  attendance: [{
+    playerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    status: { type: String, enum: ['present', 'flaked'], required: true },
+    markedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    markedAt: { type: Date, default: Date.now }
+  }],
   openSlots: { type: Number, required: true },
-  status: { type: String, enum: ['OPEN', 'FULL', 'CANCELLED', 'COMPLETED'], default: 'OPEN' }
+  status: { type: String, enum: ['OPEN', 'FULL', 'CANCELLED', 'COMPLETED'], default: 'OPEN' },
+  seeded: { type: Boolean, default: false }
 }, { timestamps: true });
 
 gameSchema.index({ location: '2dsphere' });

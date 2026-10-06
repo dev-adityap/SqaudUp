@@ -14,8 +14,8 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({ origin: CLIENT_URL, credentials: true }));
-app.use(express.json());
-app.use(morgan('dev'));
+app.use(express.json({ limit: '100kb' }));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

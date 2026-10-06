@@ -3,6 +3,12 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   username: { type: String, required: true, unique: true },
+  // Firebase Authentication UID. Sparse + unique so the seeded test accounts
+  // (which have no Firebase identity) keep working alongside real sign-ins.
+  uid: { type: String, unique: true, sparse: true, index: true },
+  email: { type: String },
+  avatar: { type: String },
+  age: { type: Number },
   sports: [{ type: String }],
   skillLevels: {
     type: Map,

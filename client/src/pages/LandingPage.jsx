@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, ChevronRight } from 'lucide-react';
 import GameCard from '../components/game/GameCard';
+import { API_BASE } from '../utils/api';
 
 // Hardcoded beautiful sports categories for the landing page grid
 const liveSportsData = [
@@ -15,23 +16,25 @@ const liveSportsData = [
 export default function LandingPage() {
   const [matchStep, setMatchStep] = useState(0);
   const [liveGames, setLiveGames] = useState([]);
+  const [gamesError, setGamesError] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => setMatchStep((prev) => (prev < 4 ? prev + 1 : 4)), 900);
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch the newly seeded games from MongoDB for the bottom section!
+  // Fetch real games from MongoDB for the bottom section.
   useEffect(() => {
     const fetchGames = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/games');
+        const response = await fetch(`${API_BASE}/api/games`);
+        if (!response.ok) throw new Error(`Server responded ${response.status}`);
         const data = await response.json();
-        const games = data.data || data || [];
-        // Only show the first 3 games on the landing page to keep it clean
-        setLiveGames(games.slice(0, 3)); 
+        setLiveGames((data.data || []).slice(0, 3));
       } catch (error) {
-        console.error("Error fetching live games:", error);
+        console.error('Error fetching live games:', error);
+        // Public landing page: a toast would be noise, so surface it inline.
+        setGamesError('Live games are unavailable right now.');
       }
     };
     fetchGames();
@@ -44,9 +47,6 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-7">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-xs font-semibold uppercase tracking-widest text-[#ff5500] mb-6">
-                Matchmaking Platform
-              </div>
               <h1 className="text-6xl sm:text-7xl xl:text-9xl font-display font-black leading-[0.88] text-white mb-6">
                 NEVER<br />
                 <span className="text-neutral-400">PLAY</span><br />
@@ -136,8 +136,22 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl sm:text-6xl font-display font-black text-white mb-10">GAMES NEAR YOU.</h2>
           
-          {liveGames.length === 0 ? (
-            <div className="text-neutral-500 font-bold">Loading live games...</div>
+          {gamesError ? (
+            <div className="py-12 px-6 text-center border border-dashed border-red-900/40 rounded-2xl bg-red-950/20">
+              <p className="text-red-300 font-bold mb-1">{gamesError}</p>
+              <p className="text-sm text-red-400/70">Check that the backend is running on port 5000.</p>
+            </div>
+          ) : liveGames.length === 0 ? (
+            <div className="py-12 px-6 text-center border border-dashed border-neutral-800 rounded-2xl">
+              <p className="text-neutral-300 font-bold mb-1">No open games right now</p>
+              <p className="text-sm text-neutral-500">Be the first to post a match.</p>
+              <Link
+                to="/create-game"
+                className="inline-block mt-5 bg-[#ff5500] hover:bg-[#ff6611] text-white font-bold px-5 py-2.5 rounded-lg transition"
+              >
+                Host a Game
+              </Link>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {liveGames.map((game) => (

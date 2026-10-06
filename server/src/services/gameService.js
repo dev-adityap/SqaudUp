@@ -1,56 +1,99 @@
 const createError = require('http-errors');
-const gameRepo = require('../repositories/memory/gameRepository');
-const userRepo = require('../repositories/memory/userRepository');
+const Game = require('../data/models/Game');
+const User = require('../data/models/User');
+const logger = require('../utils/logger');
+const { toPublicUser } = require('../utils/publicUser');
+
+// Resolve the Mongo User behind a verified Firebase uid. 401 if not provisioned.
+async function requireMongoUser(uid) {
+  const user = await User.findOne({ uid });
+  if (!user) {
+    throw createError(403, 'Finish setting up your profile before joining a squad', {
+      code: 'PROFILE_NOT_READY',
+    });
+  }
+  return user;
+}
 
 class GameService {
   async getAllGames(filters) {
-    return await gameRepo.findMany(filters);
+    const games = await Game.find(filters).sort({ date: 1, startTime: 1 }).lean();
+    return games;
   }
 
+  // Host and roster are reduced to the public projection. Full User documents
+  // carry email/uid/location and must never leave the server here.
   async getGameDetails(gameId) {
-    const game = await gameRepo.findById(gameId);
+    const game = await Game.findById(gameId).lean();
     if (!game) throw createError(404, 'Game not found', { code: 'GAME_NOT_FOUND' });
-    
-    // Simulate populating relational data
-    const host = await userRepo.findById(game.hostId);
-    const players = await Promise.all(game.players.map(id => userRepo.findById(id)));
-    
-    return { ...game, host, players };
+
+    const [host, players] = await Promise.all([
+      User.findById(game.hostId).select('username avatar age reliabilityScore gamesPlayed sports').lean(),
+      User.find({ _id: { $in: game.players } })
+        .select('username avatar age reliabilityScore gamesPlayed sports')
+        .lean(),
+    ]);
+
+    // Preserve roster order from game.players.
+    const byId = new Map(players.map((p) => [String(p._id), p]));
+    const ordered = game.players
+      .map((pid) => byId.get(String(pid)))
+      .filter(Boolean)
+      .map(toPublicUser);
+
+    return { ...game, host: toPublicUser(host), players: ordered };
   }
 
-  async createGame(data) {
-    const host = await userRepo.findById(data.hostId);
-    if (!host) throw createError(404, 'Host user not found');
-    return await gameRepo.create(data);
+  async createGame(data, hostDoc) {
+    return await Game.create({
+      ...data,
+      hostId: hostDoc._id,
+      players: [hostDoc._id],
+      openSlots: Math.max(0, data.maxPlayers - 1),
+      status: 'OPEN',
+    });
   }
 
-  async joinGame(gameId, userId) {
-    const game = await gameRepo.findById(gameId);
-    if (!game) throw createError(404, 'Game not found');
-    
-    if (game.status !== 'OPEN') throw createError(400, 'Game is not open for joining');
-    if (game.openSlots <= 0) throw createError(400, 'Game is already full');
-    if (game.players.includes(userId)) throw createError(400, 'User is already in this game');
+  // userId is always the authenticated user's own Mongo id. Never client-supplied.
+  async joinGame(gameId, userDoc) {
+    const game = await Game.findById(gameId);
+    if (!game) throw createError(404, 'Game not found', { code: 'GAME_NOT_FOUND' });
 
-    const updatedPlayers = [...game.players, userId];
-    const updatedSlots = game.openSlots - 1;
-    const status = updatedSlots === 0 ? 'FULL' : 'OPEN';
+    const uid = userDoc._id.toString();
+    if (game.status === 'CANCELLED') throw createError(400, 'This game has been cancelled');
+    if (game.status === 'FULL' || game.openSlots <= 0) {
+      throw createError(400, 'This game is already full', { code: 'GAME_FULL' });
+    }
+    if (game.players.some((p) => p.toString() === uid)) {
+      throw createError(409, 'You are already in this game', { code: 'ALREADY_JOINED' });
+    }
 
-    return await gameRepo.update(gameId, { players: updatedPlayers, openSlots: updatedSlots, status });
+    game.players.push(userDoc._id);
+    game.openSlots = Math.max(0, game.openSlots - 1);
+    game.status = game.openSlots === 0 ? 'FULL' : 'OPEN';
+    return await game.save();
   }
 
-  async leaveGame(gameId, userId) {
-    const game = await gameRepo.findById(gameId);
-    if (!game) throw createError(404, 'Game not found');
-    
-    if (game.hostId === userId) throw createError(400, 'Host cannot leave without transferring ownership');
-    if (!game.players.includes(userId)) throw createError(400, 'User is not in this game');
+  async leaveGame(gameId, userDoc) {
+    const game = await Game.findById(gameId);
+    if (!game) throw createError(404, 'Game not found', { code: 'GAME_NOT_FOUND' });
 
-    const updatedPlayers = game.players.filter(id => id !== userId);
-    const updatedSlots = game.openSlots + 1;
+    const uid = userDoc._id.toString();
+    if (game.hostId.toString() === uid) {
+      throw createError(400, 'The host cannot leave without transferring ownership', {
+        code: 'HOST_CANNOT_LEAVE',
+      });
+    }
+    if (!game.players.some((p) => p.toString() === uid)) {
+      throw createError(400, 'You are not in this game', { code: 'NOT_IN_GAME' });
+    }
 
-    return await gameRepo.update(gameId, { players: updatedPlayers, openSlots: updatedSlots, status: 'OPEN' });
+    game.players = game.players.filter((p) => p.toString() !== uid);
+    game.openSlots = Math.min(game.maxPlayers, game.openSlots + 1);
+    if (game.status === 'FULL') game.status = 'OPEN';
+    return await game.save();
   }
 }
 
 module.exports = new GameService();
+module.exports.requireMongoUser = requireMongoUser;

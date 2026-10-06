@@ -1,16 +1,13 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const createError = require('http-errors');
 
 exports.askGemini = async (req, res, next) => {
   try {
+    // prompt shape is enforced by chatSchema in routes/index.js
     const { prompt } = req.body;
-    
-    if (!prompt) {
-      return res.status(400).json({ success: false, message: "Prompt is required" });
-    }
 
-    // Initialize the Gemini client using the key from your .env
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    
+
     // We use gemini-1.5-flash as it is the fastest and perfect for real-time chat
     const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
@@ -20,7 +17,7 @@ exports.askGemini = async (req, res, next) => {
 
     res.json({ success: true, text: aiResponse });
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    res.status(500).json({ success: false, message: "AI failed to respond", error: error.message });
+    // Never surface the upstream provider error text to the client.
+    next(createError(502, 'AI service is temporarily unavailable', { cause: error }));
   }
 };

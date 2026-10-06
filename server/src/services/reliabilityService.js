@@ -25,7 +25,10 @@ class ReliabilityService {
     if (newScore > 100) newScore = 100;
     if (newScore < 0) newScore = 0;
 
-    user.reliabilityScore = newScore; // Update the in-memory user directly
+    // Persist the score change. Without this the document is mutated in memory
+    // and silently discarded when the request ends.
+    user.reliabilityScore = newScore;
+    await user.save();
 
     return await relRepo.createEvent({
       userId, gameId, event, previousScore, scoreChange: weight, newScore

@@ -2,14 +2,15 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('../data/models/User');
 const Game = require('../data/models/Game');
+const logger = require('../utils/logger');
 
 const seedDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    console.log('Connected to MongoDB Atlas...');
+    logger.info('Connected to MongoDB Atlas...');
 
     // Clear existing data
-   await mongoose.connection.db.dropDatabase();
+    await mongoose.connection.db.dropDatabase();
 
     // Insert your squad
     const users = await User.insertMany([
@@ -19,13 +20,14 @@ const seedDB = async () => {
       { name: 'Souvik Das', username: 'souvik_cricket', sports: ['Cricket'], skillLevels: { Cricket: 'Intermediate' }, location: { type: 'Point', coordinates: [88.4500, 22.6000] }, reliabilityScore: 92, gamesPlayed: 18 }
     ]);
 
-    console.log('\n✅ Database Seeded Successfully!');
-    console.log('⚠️ IMPORTANT: Copy these new ObjectIds to use in Postman:\n');
-    users.forEach(u => console.log(`${u.name}: ${u._id}`));
-    
-    process.exit();
+    logger.info('Database Seeded Successfully!');
+    logger.warn('Copy these new ObjectIds to use in Postman:');
+    users.forEach(u => logger.info(`${u.name}: ${u._id}`));
+
+    await mongoose.connection.close();
+    process.exit(0);
   } catch (err) {
-    console.error(err);
+    logger.error(err.message);
     process.exit(1);
   }
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail } from 'lucide-react';
+import { Logo } from '../Logo';
 
 export default function Footer() {
   return (
@@ -10,14 +11,7 @@ export default function Footer() {
           
           {/* Column 1: Brand (Span 3) */}
           <div className="lg:col-span-3">
-            <Link to="/" className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 bg-[#ff5500] rounded flex items-center justify-center font-display font-black text-white text-lg">
-                S
-              </div>
-              <span className="font-display font-black text-2xl tracking-wider text-white">
-                SQAUD<span className="text-[#ff5500]">UP</span>
-              </span>
-            </Link>
+            <Logo size="md" className="mb-6" />
             <p className="text-neutral-400 text-sm leading-relaxed">
               "Never play short." Find verified local athletes with high reliability scores to complete your squad instantly.
             </p>
