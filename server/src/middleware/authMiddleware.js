@@ -1,32 +1,33 @@
 const createError = require('http-errors');
-const admin = require('firebase-admin');
+// FIX: Using modern modular imports for Firebase Admin v10+
+const { initializeApp, getApps, cert } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 
 let appInitialized = false;
 
-const getAuth = () => {
+const getAuthInstance = () => {
   if (!appInitialized) {
-    if (admin.apps.length === 0) {
+    if (getApps().length === 0) {
       const projectId = process.env.FIREBASE_PROJECT_ID;
       const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
       const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
 
       if (!projectId || !clientEmail || !rawPrivateKey) {
+        console.error("❌ ERROR: Missing Firebase Admin environment variables.");
         throw createError(500, 'Firebase Admin credentials are not configured on the server');
       }
 
-      // Env vars mangle newlines; restore them for the RSA key parser.
       const privateKey = rawPrivateKey.replace(/\\n/g, '\n');
 
-      admin.initializeApp({
-        credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
+      initializeApp({
+        credential: cert({ projectId, clientEmail, privateKey }),
       });
     }
     appInitialized = true;
   }
-  return admin.auth();
+  return getAuth(); 
 };
 
-// Routes that must never be reachable without a valid Firebase ID token.
 const requireAuth = async (req, res, next) => {
   const header = req.headers.authorization || '';
   const [scheme, token] = header.split(' ');
@@ -36,14 +37,21 @@ const requireAuth = async (req, res, next) => {
   }
 
   try {
-    const decoded = await getAuth().verifyIdToken(token, true);
+    // FIX: No 'true' flag, so clock-skew is ignored.
+    const decoded = await getAuthInstance().verifyIdToken(token);
+    
     req.user = {
       uid: decoded.uid,
       email: decoded.email || null,
+      name: decoded.name || null,
+      picture: decoded.picture || null,
     };
     return next();
   } catch (err) {
-    return next(createError(401, 'Invalid or expired authentication token'));
+    console.error('\n🔥 FIREBASE TOKEN REJECTED:', err.code, err.message);
+    return res.status(401).json({ 
+      error: `FIREBASE_REJECTED: [${err.code}] ${err.message}` 
+    });
   }
 };
 

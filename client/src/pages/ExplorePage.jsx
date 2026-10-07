@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useMemo, useState } from 'react';
 import { Search, Calendar, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -22,6 +23,7 @@ const sportCategories = [
 const SPORTS = ['All', ...sportCategories.map((s) => s.name)];
 
 export default function ExplorePage() {
+  const navigate = useNavigate();
   const { games, loading, error, refresh, meId } = useGames();
 
   const [selectedSport, setSelectedSport] = useState('All');
@@ -75,8 +77,8 @@ export default function ExplorePage() {
               <button
                 key={sport.name}
                 type="button"
-                onClick={() => setSelectedSport(isActive ? 'All' : sport.name)}
-                className={`group relative h-64 rounded-2xl overflow-hidden text-left border transition ${
+                onClick={() => navigate(`/sports/${sport.name.toLowerCase()}`)}
+                className={`group relative h-64 rounded-2xl overflow-hidden text-left border cursor-pointer transition ${
                   isActive ? 'border-[#ff5500] ring-2 ring-[#ff5500]' : 'border-neutral-800'
                 } focus:outline-none focus:ring-2 focus:ring-[#ff5500]`}
               >
@@ -126,7 +128,7 @@ export default function ExplorePage() {
             <button
               key={s}
               onClick={() => setSelectedSport(s)}
-              className={`flex-shrink-0 px-4 py-3 md:py-2 rounded-xl text-xs font-bold uppercase transition ${
+              className={`flex-shrink-0 px-4 py-3 md:py-2 rounded-xl text-xs font-bold uppercase transition cursor-pointer ${
                 selectedSport === s ? 'bg-white text-black' : 'bg-[#0f0f13] text-neutral-400 border border-neutral-800 hover:border-neutral-600'
               }`}
             >
@@ -142,7 +144,7 @@ export default function ExplorePage() {
           <button
             key={d.value}
             onClick={() => setSelectedDate(d.value)}
-            className={`flex-shrink-0 px-5 py-2 rounded-xl text-xs font-bold transition border ${
+            className={`flex-shrink-0 px-5 py-2 rounded-xl text-xs font-bold transition border cursor-pointer ${
               selectedDate === d.value
                 ? 'bg-[#ff5500] text-white border-[#ff5500]'
                 : 'bg-[#0f0f13] text-neutral-400 border-neutral-800 hover:border-neutral-600'
@@ -178,7 +180,7 @@ export default function ExplorePage() {
                 ) : (
                   <button
                     onClick={() => { setQuery(''); setSelectedSport('All'); setSelectedDate('All'); }}
-                    className="inline-block bg-neutral-800 hover:bg-neutral-700 text-white font-bold px-5 py-2.5 rounded-lg transition"
+                    className="inline-block bg-neutral-800 hover:bg-neutral-700 text-white font-bold px-5 py-2.5 rounded-lg transition cursor-pointer"
                   >
                     Clear filters
                   </button>

@@ -1,24 +1,10 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { auth } from '../config/firebase';
-import { onAuthStateChanged, signOut as fbSignOut } from 'firebase/auth';
-import { apiFetch } from '../utils/api';
+import { onAuthStateChanged, signOut as fbSignOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 const AuthContext = createContext(null);
 
-// Every key this app has ever written. Cleared on sign-out so a shared device
-// cannot leak a previous account's joined games or cached profile.
-const CLIENT_STORAGE_KEYS = [
-  'joinedGames',
-  'joined_guest',
-  'notifications',
-];
+const CLIENT_STORAGE_KEYS = ['joinedGames', 'joined_guest', 'notifications'];
 
 const clearClientStorage = () => {
   CLIENT_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
@@ -33,7 +19,12 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
-  // Link the Firebase identity to a Mongo user, then clear on sign-out.
+  useEffect(() => {
+    setPersistence(auth, browserLocalPersistence).catch((err) =>
+      console.error('Auth persistence setup failed:', err)
+    );
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
@@ -45,11 +36,33 @@ export const AuthProvider = ({ children }) => {
       }
       try {
         setSyncing(true);
-        const data = await apiFetch('/api/auth/sync', { method: 'POST' });
-        setProfile(data.data);
+        const freshToken = await user.getIdToken(true);
+
+        // FIX: Native fetch bypasses your apiFetch utility to guarantee the payload shape
+        const response = await fetch('http://localhost:5000/api/auth/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${freshToken}`
+          },
+          body: JSON.stringify({
+            uid: user.uid,
+            email: user.email,
+            name: user.displayName || 'SquadUp Athlete',
+            picture: user.photoURL || ''
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        setProfile(data.data || data);
+
       } catch (err) {
-        // Non-fatal: browsing still works, but mutations will report the error.
-        console.error('Profile sync failed:', err.message);
+        console.error('SYNC FAILED:', err.message);
       } finally {
         setSyncing(false);
         setLoading(false);
@@ -61,7 +74,6 @@ export const AuthProvider = ({ children }) => {
   const signOut = useCallback(async () => {
     try {
       await fbSignOut(auth);
-      // onAuthStateChanged fires and clears state + storage; force it for safety.
       setCurrentUser(null);
       setProfile(null);
       clearClientStorage();

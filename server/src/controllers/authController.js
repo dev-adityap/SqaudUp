@@ -3,6 +3,11 @@ const User = require('../data/models/User');
 const logger = require('../utils/logger');
 const { toPublicUser } = require('../utils/publicUser');
 
+const DEFAULT_LOCATION = {
+  type: 'Point',
+  coordinates: [0, 0], // [Longitude, Latitude] — safe default; user can update later
+};
+
 const deriveUsername = (decoded, existing) => {
   if (existing?.username) return existing.username;
   const base =
@@ -15,40 +20,46 @@ const deriveUsername = (decoded, existing) => {
 /**
  * Links a Firebase identity to a Mongo User document.
  * Idempotent: safe to call on every page load.
+ *
+ * Uses a single atomic findOneAndUpdate with upsert:true so both brand-new
+ * signups and returning users are handled without race conditions or
+ * duplicate-key crashes.
  */
 exports.syncUser = async (req, res, next) => {
   try {
     const { uid, email, name, picture } = req.user;
     if (!uid) throw createError(401, 'Authentication required');
 
-    const existing = await User.findOne({ uid });
+    const username = deriveUsername({ uid, email, name }, null);
 
-    // Claim a pre-seeded account if the username matches, so demo users keep
-    // their history instead of being shadowed by a duplicate record.
-    let user = existing;
-    if (!user && email) {
-      user = await User.findOne({ username: deriveUsername({ uid, email, name }) });
-    }
-
-    if (user) {
-      user.uid = uid;
-      if (email && !user.email) user.email = email;
-      if (picture && !user.avatar) user.avatar = picture;
-      if (name && !user.name) user.name = name;
-      await user.save();
-    } else {
-      user = await User.create({
-        name: name || 'SquadUp Athlete',
-        username: deriveUsername({ uid, email, name }),
-        uid,
-        email,
-        avatar: picture,
-      });
-      logger.info(`[authSync] Provisioned new user ${user._id} for uid ${uid.slice(0, 8)}`);
-    }
+    // Atomic upsert: create on first login, merge fields on every subsequent
+    // sync. Never touches existing user documents that were seeded without a
+    // Firebase identity (sparse uid index).
+// Atomic upsert: create on first login, merge fields on every subsequent sync.
+    const user = await User.findOneAndUpdate(
+      { uid },
+      {
+        // FIX: $set and $setOnInsert must be siblings, not nested
+        $set: {
+          uid,
+          email: email || undefined,
+          name: name || undefined,
+          avatar: picture || undefined,
+          username,
+        },
+        $setOnInsert: { 
+          location: DEFAULT_LOCATION 
+        },
+      },
+      // FIX: Updated to 'returnDocument: after' to remove the Mongoose warning
+      { upsert: true, returnDocument: 'after', runValidators: true }
+    );
 
     res.json({ success: true, data: toPublicUser(user) });
   } catch (err) {
+    // Explicit DB log so the terminal prints exactly what went wrong.
+    console.error('SYNC DB ERROR:', err.message, '| code:', err.code, '| name:', err.name);
+
     // A unique-index collision means another account already owns this username.
     if (err.code === 11000) {
       return next(createError(409, 'That username is already taken', { code: 'CONFLICT' }));
