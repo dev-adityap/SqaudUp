@@ -4,18 +4,18 @@ import { ArrowRight, CheckCircle2, ChevronRight } from 'lucide-react';
 import GameCard from '../components/game/GameCard';
 import { API_BASE } from '../utils/api';
 
-// Hardcoded beautiful sports categories for the landing page grid
-const liveSportsData = [
-  { id: 'football', name: 'Football', activeGames: 34, image: 'https://images.unsplash.com/photo-1653332369957-bec2dd263112?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
-  { id: 'cricket', name: 'Cricket', activeGames: 28, image: 'https://plus.unsplash.com/premium_photo-1721963696751-0e8c3ac42f9d?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
-  { id: 'basketball', name: 'Basketball', activeGames: 19, image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=1200&auto=format&fit=crop' },
-  { id: 'badminton', name: 'Badminton', activeGames: 12, image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1200&auto=format&fit=crop' },
-  { id: 'tennis', name: 'Tennis', activeGames: 8, image: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?q=80&w=1200&auto=format&fit=crop' },
+// Static metadata for sport cards (images and IDs) — numbers will be calculated live!
+const SPORTS_METADATA = [
+  { id: 'football', name: 'Football', image: 'https://images.unsplash.com/photo-1653332369957-bec2dd263112?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
+  { id: 'cricket', name: 'Cricket', image: 'https://plus.unsplash.com/premium_photo-1721963696751-0e8c3ac42f9d?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
+  { id: 'basketball', name: 'Basketball', image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=1200&auto=format&fit=crop' },
+  { id: 'badminton', name: 'Badminton', image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1200&auto=format&fit=crop' },
+  { id: 'tennis', name: 'Tennis', image: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?q=80&w=1200&auto=format&fit=crop' },
 ];
 
 export default function LandingPage() {
   const [matchStep, setMatchStep] = useState(0);
-  const [liveGames, setLiveGames] = useState([]);
+  const [allGames, setAllGames] = useState([]);
   const [gamesError, setGamesError] = useState(null);
 
   useEffect(() => {
@@ -23,22 +23,32 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch real games from MongoDB for the bottom section.
+  // Fetch all games from MongoDB to power both the category counts and the bottom section.
   useEffect(() => {
     const fetchGames = async () => {
       try {
         const response = await fetch(`${API_BASE}/api/games`);
         if (!response.ok) throw new Error(`Server responded ${response.status}`);
         const data = await response.json();
-        setLiveGames((data.data || []).slice(0, 3));
+        setAllGames(data.data || data || []);
       } catch (error) {
         console.error('Error fetching live games:', error);
-        // Public landing page: a toast would be noise, so surface it inline.
         setGamesError('Live games are unavailable right now.');
       }
     };
     fetchGames();
   }, []);
+
+  // Dynamically map active game counts to each sport category
+  const liveSportsData = SPORTS_METADATA.map((sport) => ({
+    ...sport,
+    activeGames: allGames.filter(
+      (game) => game.sport && game.sport.toLowerCase() === sport.id
+    ).length,
+  }));
+
+  // Slice only the first 3 for the "Games Near You" section
+  const nearYouGames = allGames.slice(0, 3);
 
   return (
     <div className="overflow-hidden">
@@ -96,7 +106,7 @@ export default function LandingPage() {
                 <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
                   <div>
                     <h3 className="font-display text-3xl font-bold text-white group-hover:text-[#ff5500] transition">{sport.name}</h3>
-                    <p className="text-xs text-neutral-400">{sport.activeGames} active games</p>
+                    <p className="text-xs text-neutral-400">{sport.activeGames} active {sport.activeGames === 1 ? 'game' : 'games'}</p>
                   </div>
                   <ChevronRight className="w-6 h-6 text-white" />
                 </div>
@@ -141,7 +151,7 @@ export default function LandingPage() {
               <p className="text-red-300 font-bold mb-1">{gamesError}</p>
               <p className="text-sm text-red-400/70">Check that the backend is running on port 5000.</p>
             </div>
-          ) : liveGames.length === 0 ? (
+          ) : nearYouGames.length === 0 ? (
             <div className="py-12 px-6 text-center border border-dashed border-neutral-800 rounded-2xl">
               <p className="text-neutral-300 font-bold mb-1">No open games right now</p>
               <p className="text-sm text-neutral-500">Be the first to post a match.</p>
@@ -154,7 +164,7 @@ export default function LandingPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {liveGames.map((game) => (
+              {nearYouGames.map((game) => (
                 <GameCard key={game._id} game={game} />
               ))}
             </div>

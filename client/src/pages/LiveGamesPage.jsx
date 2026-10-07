@@ -28,7 +28,7 @@ export default function LiveGamesPage() {
   const visible = lists[activeTab] || [];
 
   const emptyCopy = {
-    upcoming: { title: "You haven't joined any games yet", body: 'Browse open games in Explore and join your first squad.' },
+    upcoming: { title: "You have no upcoming matches", body: 'Browse open games in Explore and join your first squad.' },
     joined: { title: 'No joined games', body: 'Games you join will show up here.' },
     hosting: { title: "You're not hosting anything", body: 'Create a game and invite your friends to fill the squad.' },
     history: { title: 'No past games', body: 'Completed and past-dated games will appear here.' },
