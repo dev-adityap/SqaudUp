@@ -57,6 +57,7 @@ export default function App() {
                 <Route path="/games/:id" element={<GameDetailsPage />} />
                 <Route path="/players" element={<Leaderboard />} />
                 <Route path="/sports/:sport" element={<SportPage />} />
+                <Route path="/profile/:id" element={<AthleteProfile />} />
                 <Route
                   path="/login"
                   element={<GuestOnlyRoute><AuthPage mode="login" /></GuestOnlyRoute>}
@@ -75,7 +76,6 @@ export default function App() {
                 <Route path="/notifications" element={protect(<NotificationsPage />)} />
                 <Route path="/profile" element={protect(<ProfilePage />)} />
                 <Route path="/settings" element={protect(<SettingsPage />)} />
-                <Route path="/profile/:id" element={<AthleteProfile />} />
 
                 {/* CATCH-ALL so a bad URL never renders a blank page */}
                 <Route

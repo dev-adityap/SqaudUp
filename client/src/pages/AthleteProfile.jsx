@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ArrowLeft, MapPin, Calendar, Activity } from 'lucide-react';
 import { API_BASE } from '../utils/api';
 
@@ -38,6 +38,8 @@ export default function AthleteProfile() {
   }
 
   const { user, sportDistribution, recentGames } = profileData;
+  const sports = sportDistribution || [];
+  const history = recentGames || [];
   const flakes = Math.max(0, (user.gamesPlayed || 0) - (user.gamesAttended || 0));
 
   return (
@@ -49,7 +51,7 @@ export default function AthleteProfile() {
       {/* HEADER SECTION */}
       <div className="bg-[#0f0f13] border border-neutral-800 rounded-3xl p-8 mb-8 shadow-2xl flex flex-col md:flex-row items-center gap-8">
         <div className="w-32 h-32 rounded-full bg-neutral-900 border-4 border-neutral-800 flex items-center justify-center text-[#ff5500] text-5xl font-black shadow-[0_0_30px_rgba(255,85,0,0.15)]">
-          {user.username.charAt(0).toUpperCase()}
+          {(user.username || '?').charAt(0).toUpperCase()}
         </div>
         <div className="text-center md:text-left flex-1">
           <h1 className="text-4xl font-black text-white uppercase tracking-tight mb-2">@{user.username}</h1>
@@ -71,10 +73,14 @@ export default function AthleteProfile() {
         <div className="lg:col-span-1 space-y-8">
           
           {/* Quick Stats Grid */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="bg-[#0f0f13] border border-neutral-800 rounded-2xl p-5 text-center">
               <p className="text-3xl font-black text-white">{user.gamesPlayed || 0}</p>
               <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mt-1">Played</p>
+            </div>
+            <div className="bg-[#0f0f13] border border-neutral-800 rounded-2xl p-5 text-center">
+              <p className="text-3xl font-black text-white">{user.gamesAttended || 0}</p>
+              <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mt-1">Attended</p>
             </div>
             <div className="bg-[#0f0f13] border border-neutral-800 rounded-2xl p-5 text-center">
               <p className="text-3xl font-black text-red-500">{flakes}</p>
@@ -85,19 +91,20 @@ export default function AthleteProfile() {
           {/* Recharts Donut Chart */}
           <div className="bg-[#0f0f13] border border-neutral-800 rounded-3xl p-6 shadow-xl">
             <h3 className="text-white font-bold mb-6 text-sm uppercase tracking-widest">Sport Distribution</h3>
-            {sportDistribution.length > 0 ? (
+            {sports.length > 0 ? (
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={sportDistribution}
+                      data={sports}
                       innerRadius={60}
                       outerRadius={80}
                       paddingAngle={5}
                       dataKey="value"
+                      nameKey="name"
                       stroke="none"
                     >
-                      {sportDistribution.map((entry, index) => (
+                      {sports.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -105,22 +112,16 @@ export default function AthleteProfile() {
                       contentStyle={{ backgroundColor: '#0f0f13', borderColor: '#262626', color: '#fff', borderRadius: '12px' }}
                       itemStyle={{ color: '#fff', fontWeight: 'bold' }}
                     />
+                    <Legend
+                      formatter={(value) => value.toUpperCase()}
+                      wrapperStyle={{ color: '#a3a3a3', fontSize: 11, fontWeight: 700, paddingTop: 8 }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
             ) : (
               <div className="h-64 flex items-center justify-center text-neutral-600 font-bold">No data yet.</div>
             )}
-            
-            {/* Custom Legend */}
-            <div className="flex flex-wrap justify-center gap-3 mt-4">
-              {sportDistribution.map((sport, idx) => (
-                <div key={sport.name} className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold uppercase">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></span>
-                  {sport.name}
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 
@@ -129,17 +130,17 @@ export default function AthleteProfile() {
           <div className="bg-[#0f0f13] border border-neutral-800 rounded-3xl p-6 shadow-xl h-full">
             <h3 className="text-white font-bold mb-6 text-sm uppercase tracking-widest">Recent Matches</h3>
             
-            {recentGames.length > 0 ? (
+            {history.length > 0 ? (
               <div className="space-y-4">
-                {recentGames.map(game => (
-                  <div key={game._id} className="group bg-neutral-900 border border-neutral-800 hover:border-neutral-600 rounded-2xl p-5 transition-colors cursor-pointer" onClick={() => navigate(`/games/${game._id}`)}>
+                {history.map(game => (
+                  <div key={game.id} className="group bg-neutral-900 border border-neutral-800 hover:border-neutral-600 rounded-2xl p-5 transition-colors cursor-pointer" onClick={() => navigate(`/games/${game.id}`)}>
                     <div className="flex justify-between items-start mb-3">
-                      <h4 className="font-black text-white text-lg uppercase tracking-tight group-hover:text-[#ff5500] transition-colors">{game.title}</h4>
-                      <span className="bg-neutral-800 px-3 py-1 rounded-full text-[10px] font-bold text-[#ff5500] uppercase tracking-wider">{game.sport}</span>
+                      <h4 className="font-black text-white text-lg uppercase tracking-tight group-hover:text-[#ff5500] transition-colors">{game.sport}</h4>
+                      <span className="bg-neutral-800 px-3 py-1 rounded-full text-[10px] font-bold text-[#ff5500] uppercase tracking-wider">{game.status}</span>
                     </div>
                     <div className="flex items-center gap-6 text-sm text-neutral-500 font-medium">
-                      <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> {game.date?.substring(0, 10)}</span>
-                      <span className="flex items-center gap-2"><MapPin className="w-4 h-4" /> {game.venue?.name || game.venue || 'Local Venue'}</span>
+                      <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> {game.date?.substring(0, 10) || 'TBD'}</span>
+                      <span className="flex items-center gap-2"><MapPin className="w-4 h-4" /> {game.venue || 'Local Venue'}</span>
                     </div>
                   </div>
                 ))}
