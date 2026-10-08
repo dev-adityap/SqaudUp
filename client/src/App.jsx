@@ -1,4 +1,5 @@
 import React from 'react';
+import AthleteProfile from './pages/AthleteProfile';
 import { Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { GamesProvider } from './context/GamesContext';
@@ -15,7 +16,7 @@ import ExplorePage from './pages/ExplorePage';
 import GameDetailsPage from './pages/GameDetailsPage';
 import CreateGamePage from './pages/CreateGamePage';
 import MatchmakingPage from './pages/MatchmakingPage';
-import PlayersPage from './pages/PlayersPage';
+import Leaderboard from './pages/Leaderboard';
 import SportPage from './pages/SportPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ProfilePage from './pages/ProfilePage';
@@ -54,7 +55,7 @@ export default function App() {
                 <Route path="/explore" element={<ExplorePage />} />
                 <Route path="/games" element={<LiveGamesPage />} />
                 <Route path="/games/:id" element={<GameDetailsPage />} />
-                <Route path="/players" element={<PlayersPage />} />
+                <Route path="/players" element={<Leaderboard />} />
                 <Route path="/sports/:sport" element={<SportPage />} />
                 <Route
                   path="/login"
@@ -74,6 +75,7 @@ export default function App() {
                 <Route path="/notifications" element={protect(<NotificationsPage />)} />
                 <Route path="/profile" element={protect(<ProfilePage />)} />
                 <Route path="/settings" element={protect(<SettingsPage />)} />
+                <Route path="/profile/:id" element={<AthleteProfile />} />
 
                 {/* CATCH-ALL so a bad URL never renders a blank page */}
                 <Route

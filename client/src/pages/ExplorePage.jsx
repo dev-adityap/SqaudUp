@@ -1,6 +1,7 @@
+import GameMap from '../components/map/GameMap';
 import { useNavigate } from 'react-router-dom';
 import React, { useMemo, useState } from 'react';
-import { Search, Calendar, Trophy } from 'lucide-react';
+import { Search, Calendar, Trophy, Map as MapIcon, Grid } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import GameCard from '../components/game/GameCard';
 import { useGames } from '../context/GamesContext';
@@ -29,6 +30,9 @@ export default function ExplorePage() {
   const [selectedSport, setSelectedSport] = useState('All');
   const [selectedDate, setSelectedDate] = useState('All');
   const [query, setQuery] = useState('');
+  
+  // NEW: State to track which view the user wants
+  const [viewMode, setViewMode] = useState('grid'); 
 
   const upcomingDates = useMemo(() => {
     const dates = [{ label: 'All Dates', value: 'All' }];
@@ -46,8 +50,6 @@ export default function ExplorePage() {
     return dates;
   }, []);
 
-  // The banner advertises these counts, so drive them from live data instead of
-  // showing a number the database may not agree with. Case-insensitive.
   const categoryCounts = useMemo(
     () => countBySport(games, sportCategories),
     [games]
@@ -68,6 +70,7 @@ export default function ExplorePage() {
     <div className="pt-28 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <h1 className="text-5xl font-display font-black text-white mb-6">FIND YOUR NEXT GAME.</h1>
 
+      {/* Sport Category Cards */}
       <section className="mb-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {sportCategories.map((sport) => {
@@ -112,6 +115,7 @@ export default function ExplorePage() {
         </div>
       </section>
 
+      {/* Filters & Search */}
       <div className="flex flex-col md:flex-row gap-4 mb-4">
         <div className="relative flex-1">
           <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
@@ -138,57 +142,90 @@ export default function ExplorePage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-        <Calendar className="w-5 h-5 text-neutral-500 flex-shrink-0 mr-1" />
-        {upcomingDates.map((d) => (
-          <button
-            key={d.value}
-            onClick={() => setSelectedDate(d.value)}
-            className={`flex-shrink-0 px-5 py-2 rounded-xl text-xs font-bold transition border cursor-pointer ${
-              selectedDate === d.value
-                ? 'bg-[#ff5500] text-white border-[#ff5500]'
-                : 'bg-[#0f0f13] text-neutral-400 border-neutral-800 hover:border-neutral-600'
-            }`}
+      {/* Dates & View Toggle Bar */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide max-w-full">
+          <Calendar className="w-5 h-5 text-neutral-500 flex-shrink-0 mr-1" />
+          {upcomingDates.map((d) => (
+            <button
+              key={d.value}
+              onClick={() => setSelectedDate(d.value)}
+              className={`flex-shrink-0 px-5 py-2 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                selectedDate === d.value
+                  ? 'bg-[#ff5500] text-white border-[#ff5500]'
+                  : 'bg-[#0f0f13] text-neutral-400 border-neutral-800 hover:border-neutral-600'
+              }`}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+
+        {/* NEW: View Mode Toggle */}
+        <div className="flex gap-1 bg-[#0f0f13] p-1 rounded-xl border border-neutral-800 flex-shrink-0">
+          <button 
+            onClick={() => setViewMode('grid')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${viewMode === 'grid' ? 'bg-[#ff5500] text-white' : 'text-neutral-400 hover:text-white'}`}
           >
-            {d.label}
+            <Grid className="w-4 h-4" /> Grid
           </button>
-        ))}
+          <button 
+            onClick={() => setViewMode('map')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${viewMode === 'map' ? 'bg-[#ff5500] text-white' : 'text-neutral-400 hover:text-white'}`}
+          >
+            <MapIcon className="w-4 h-4" /> Map
+          </button>
+        </div>
       </div>
 
+      {/* Main Results Area */}
       {loading ? (
         <SkeletonGrid />
       ) : error ? (
         <ErrorState message={error} onRetry={refresh} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((game) => <GameCard key={game._id} game={game} />)}
-
+        <>
+          {/* Empty State */}
           {filtered.length === 0 && (
-            <EmptyState
-              icon={Trophy}
-              title={games.length === 0 ? 'No games posted yet' : 'No games match your filters'}
-              description={
-                games.length === 0
-                  ? 'Be the first to host a match and get the squad rolling.'
-                  : 'Try a different sport, date, or clear your search.'
-              }
-              action={
-                games.length === 0 ? (
-                  <Link to="/create-game" className="inline-block bg-[#ff5500] hover:bg-[#ff6611] text-white font-bold px-5 py-2.5 rounded-lg transition">
-                    Host a Game
-                  </Link>
-                ) : (
-                  <button
-                    onClick={() => { setQuery(''); setSelectedSport('All'); setSelectedDate('All'); }}
-                    className="inline-block bg-neutral-800 hover:bg-neutral-700 text-white font-bold px-5 py-2.5 rounded-lg transition cursor-pointer"
-                  >
-                    Clear filters
-                  </button>
-                )
-              }
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <EmptyState
+                icon={Trophy}
+                title={games.length === 0 ? 'No games posted yet' : 'No games match your filters'}
+                description={
+                  games.length === 0
+                    ? 'Be the first to host a match and get the squad rolling.'
+                    : 'Try a different sport, date, or clear your search.'
+                }
+                action={
+                  games.length === 0 ? (
+                    <Link to="/create-game" className="inline-block bg-[#ff5500] hover:bg-[#ff6611] text-white font-bold px-5 py-2.5 rounded-lg transition">
+                      Host a Game
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => { setQuery(''); setSelectedSport('All'); setSelectedDate('All'); }}
+                      className="inline-block bg-neutral-800 hover:bg-neutral-700 text-white font-bold px-5 py-2.5 rounded-lg transition cursor-pointer"
+                    >
+                      Clear filters
+                    </button>
+                  )
+                }
+              />
+            </div>
           )}
-        </div>
+
+          {/* Grid View */}
+          {filtered.length > 0 && viewMode === 'grid' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filtered.map((game) => <GameCard key={game._id} game={game} />)}
+            </div>
+          )}
+
+          {/* Map View */}
+          {filtered.length > 0 && viewMode === 'map' && (
+            <GameMap games={filtered} />
+          )}
+        </>
       )}
     </div>
   );

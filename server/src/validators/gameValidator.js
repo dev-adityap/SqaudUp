@@ -44,10 +44,21 @@ const markAttendanceSchema = z.object({
   status: z.enum(['present', 'flaked']),
 }).strict();
 
+// POST /api/games/:id/review
+const reviewGameSchema = z.object({
+  attendance: z.array(
+    z.object({
+      userId: objectId,
+      attended: z.boolean(),
+    })
+  ).min(1, 'At least one attendance entry is required'),
+}).strict();
+
 module.exports = {
   createGameSchema,
   chatSchema,
   createInvitationSchema,
   attendanceSchema,
   markAttendanceSchema,
+  reviewGameSchema,
 };

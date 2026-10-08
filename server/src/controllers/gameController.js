@@ -67,3 +67,24 @@ exports.markAttendance = async (req, res, next) => {
     });
   } catch (err) { next(err); }
 };
+
+/**
+ * POST /api/games/:id/review
+ * Host-only post-game reliability review.
+ * Marks attendance for every player in the squad and recalculates each
+ * player's global Reliability Score.
+ */
+exports.reviewGame = async (req, res, next) => {
+  try {
+    const host = await requireMongoUser(req.user.uid);
+    const result = await gameService.reviewGame(req.params.id, host, req.body.attendance || []);
+
+    res.json({
+      success: true,
+      data: {
+        game: result.game,
+        players: result.players,
+      },
+    });
+  } catch (err) { next(err); }
+};

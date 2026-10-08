@@ -93,6 +93,70 @@ class GameService {
     if (game.status === 'FULL') game.status = 'OPEN';
     return await game.save();
   }
+
+  /**
+   * Host-only post-game reliability review.
+   *
+   * @param {string} gameId
+   * @param {object} hostDoc - The authenticated host's Mongo document.
+   * @param {Array<{userId: string, attended: boolean}>} attendance
+   */
+  async reviewGame(gameId, hostDoc, attendance) {
+    const game = await Game.findById(gameId);
+    if (!game) throw createError(404, 'Game not found', { code: 'GAME_NOT_FOUND' });
+
+    // Authorization: only the host may run a post-game review.
+    if (game.hostId.toString() !== hostDoc._id.toString()) {
+      throw createError(403, 'Only the host can review this match', { code: 'FORBIDDEN' });
+    }
+
+    if (game.reviewStatus === 'completed') {
+      throw createError(409, 'This match has already been reviewed', { code: 'ALREADY_REVIEWED' });
+    }
+
+    // Validate that every supplied userId is actually in the squad.
+    const squadIds = new Set(game.players.map((p) => p.toString()));
+    for (const entry of attendance) {
+      if (!squadIds.has(entry.userId)) {
+        throw createError(400, `User ${entry.userId} is not in this squad`, {
+          code: 'PLAYER_NOT_IN_SQUAD',
+        });
+      }
+    }
+
+    // Mark the game as reviewed so it can never be double-counted.
+    game.reviewStatus = 'completed';
+    game.status = 'COMPLETED';
+    await game.save();
+
+    const updatedPlayers = [];
+    for (const entry of attendance) {
+      const player = await User.findById(entry.userId);
+      if (!player) continue;
+
+      const previousScore = player.reliabilityScore ?? 100;
+      const gamesPlayed = (player.gamesPlayed || 0) + 1;
+      const gamesAttended = (player.gamesAttended || 0) + (entry.attended ? 1 : 0);
+      const reliabilityScore = Math.round((gamesAttended / gamesPlayed) * 100);
+
+      player.gamesPlayed = gamesPlayed;
+      player.gamesAttended = gamesAttended;
+      player.reliabilityScore = reliabilityScore;
+      await player.save();
+
+      updatedPlayers.push({
+        _id: player._id,
+        username: player.username,
+        reliabilityScore,
+        gamesPlayed,
+        gamesAttended,
+        attended: entry.attended,
+        previousScore,
+      });
+    }
+
+    return { game, players: updatedPlayers };
+  }
 }
 
 module.exports = new GameService();

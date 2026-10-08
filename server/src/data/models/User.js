@@ -19,7 +19,8 @@ const userSchema = new mongoose.Schema({
     coordinates: { type: [Number], required: true } // [Longitude, Latitude]
   },
   reliabilityScore: { type: Number, default: 100, min: 0, max: 100 },
-  gamesPlayed: { type: Number, default: 0 }
+  gamesPlayed: { type: Number, default: 0 },
+  gamesAttended: { type: Number, default: 0 }
 }, { timestamps: true });
 
 // Geo-spatial index for faster radius querying later!

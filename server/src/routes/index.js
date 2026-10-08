@@ -8,6 +8,8 @@ const notifController = require('../controllers/notifController');
 const reliabilityController = require('../controllers/reliabilityController');
 const aiController = require('../controllers/aiController');
 const authController = require('../controllers/authController');
+const leaderboardController = require('../controllers/leaderboardController');
+const profileController = require('../controllers/profileController');
 
 const { requireAuth } = require('../middleware/authMiddleware');
 const validate = require('../middleware/validate');
@@ -20,6 +22,7 @@ const {
   invitationActionSchema,
   attendanceSchema,
   markAttendanceSchema,
+  reviewGameSchema,
 } = require('../validators/gameValidator');
 
 // Stricter budget for the AI endpoint: it is a paid, abusable resource.
@@ -34,6 +37,12 @@ router.get('/health', (req, res) => {
   res.json({ success: true, message: 'SqaudUp API running' });
 });
 
+// Leaderboard
+router.get('/leaderboard', leaderboardController.getLeaderboard);
+
+// Profile
+router.get('/users/:id/profile', profileController.getProfile);
+
 // Links the verified Firebase identity to a Mongo user. Call once per session.
 router.post('/auth/sync', requireAuth, authController.syncUser);
 
@@ -44,12 +53,19 @@ router.post('/games', requireAuth, validate(createGameSchema), gameController.cr
 router.post('/games/:id/join', requireAuth, validateObjectIds('id'), gameController.joinGame);
 router.post('/games/:id/leave', requireAuth, validateObjectIds('id'), gameController.leaveGame);
 router.put(
-  '/games/:id/attendance',
-  requireAuth,
-  validateObjectIds('id'),
-  validate(markAttendanceSchema),
-  gameController.markAttendance
-);
+    '/games/:id/attendance',
+    requireAuth,
+    validateObjectIds('id'),
+    validate(markAttendanceSchema),
+    gameController.markAttendance
+  );
+  router.post(
+    '/games/:id/review',
+    requireAuth,
+    validateObjectIds('id'),
+    validate(reviewGameSchema),
+    gameController.reviewGame
+  );
 
 // Matchmaking
 router.get('/matches/game/:gameId', requireAuth, validateObjectIds('gameId'), matchController.getMatchCandidates);

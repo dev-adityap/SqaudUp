@@ -5,6 +5,8 @@ import WeatherBadge from '../components/WeatherBadge';
 import { useAuth } from '../context/AuthContext';
 import { useGames } from '../context/GamesContext';
 import { Spinner, ErrorState } from '../components/ui/States';
+import SquadBoard from '../components/squad/SquadBoard';
+import ReviewModal from '../components/game/ReviewModal';
 import { API_BASE } from '../utils/api';
 
 const sportImages = {
@@ -27,6 +29,7 @@ export default function GameDetailsPage() {
 
   const game = games.find((g) => g._id === id) || null;
   const [fullGame, setFullGame] = useState(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   // The list endpoint returns bare ObjectIds; the detail endpoint populates the
   // sanitised public roster (username/avatar/reliability only).
@@ -86,8 +89,24 @@ export default function GameDetailsPage() {
     return true;
   };
 
+  const handleReviewClick = () => {
+    if (!requireAuthThen()) return;
+    if (fullGame && fullGame.players && fullGame.players.length > 0) {
+      setShowReviewModal(true);
+    }
+  };
+
+  const handleReviewComplete = () => {
+    refresh();
+    navigate('/explore');
+  };
+
   const handlePrimaryAction = async () => {
     if (!requireAuthThen()) return;
+    if (hosting && (game.reviewStatus !== 'completed' && game.status !== 'COMPLETED')) {
+      handleReviewClick();
+      return;
+    }
     if (joined && !hosting) {
       await leaveGame(game._id);
       return;
@@ -98,7 +117,9 @@ export default function GameDetailsPage() {
   };
 
   const buttonLabel = hosting
-    ? 'GO TO SPACE'
+    ? (game.reviewStatus === 'completed' || game.status === 'COMPLETED'
+        ? 'MATCH REVIEWED'
+        : 'COMPLETE & REVIEW MATCH')
     : joined
       ? 'LEAVE SQUAD'
       : spotsOpen === 0
@@ -145,6 +166,8 @@ export default function GameDetailsPage() {
                 `Join us for an epic game of ${game.sport}! Bring adequate hydration and arrive 15 minutes early to warm up.`}
             </p>
           </div>
+
+         <SquadBoard sport={game.sport} />
 
           {fullGame?.players?.length > 0 && (
             <div className="bg-[#0f0f13] border border-neutral-800 rounded-2xl p-6">
@@ -213,9 +236,13 @@ export default function GameDetailsPage() {
 
             <button
               onClick={handlePrimaryAction}
-              disabled={pending || hosting || spotsOpen === 0}
+              disabled={pending || (hosting && (game.reviewStatus === 'completed' || game.status === 'COMPLETED')) || (!hosting && spotsOpen === 0)}
               className={`w-full py-4 rounded-xl font-black text-lg uppercase tracking-wider transition-all flex justify-center items-center gap-2
-                ${joined && !hosting
+                ${hosting && (game.reviewStatus !== 'completed' && game.status !== 'COMPLETED')
+                  ? 'bg-[#ff5500] text-white hover:bg-[#ff6611] hover:shadow-lg hover:shadow-[#ff5500]/30 hover:scale-[1.02] active:scale-[0.98]'
+                  : hosting
+                  ? 'bg-neutral-900 text-neutral-500 border border-neutral-700 cursor-not-allowed'
+                  : joined && !hosting
                   ? 'bg-neutral-900 text-neutral-300 border border-neutral-700 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/40'
                   : 'bg-[#ff5500] text-white hover:bg-[#ff6611] hover:shadow-lg hover:shadow-[#ff5500]/30 hover:scale-[1.02] active:scale-[0.98]'}
                 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
@@ -232,6 +259,15 @@ export default function GameDetailsPage() {
               >
                 Open Squad Space
               </button>
+            )}
+
+            {showReviewModal && (
+              <ReviewModal
+                game={fullGame || game}
+                token={currentUser?.stsTokenManager?.accessToken}
+                onComplete={handleReviewComplete}
+                onClose={() => setShowReviewModal(false)}
+              />
             )}
           </div>
         </div>

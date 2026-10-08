@@ -25,6 +25,9 @@ const gameSchema = new mongoose.Schema({
   }],
   openSlots: { type: Number, required: true },
   status: { type: String, enum: ['OPEN', 'FULL', 'CANCELLED', 'COMPLETED'], default: 'OPEN' },
+  // Post-game review lifecycle. Separate from `status` so the join/leave
+  // machinery (OPEN/FULL/CANCELLED) keeps working unchanged.
+  reviewStatus: { type: String, enum: ['open', 'completed'], default: 'open' },
   seeded: { type: Boolean, default: false }
 }, { timestamps: true });
 
