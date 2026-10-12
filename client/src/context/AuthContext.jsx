@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { auth } from '../config/firebase';
 import { onAuthStateChanged, signOut as fbSignOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { API_BASE } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -39,7 +40,7 @@ export const AuthProvider = ({ children }) => {
         const freshToken = await user.getIdToken(true);
 
         // FIX: Native fetch bypasses your apiFetch utility to guarantee the payload shape
-        const response = await fetch('http://localhost:5000/api/auth/sync', {
+        const response = await fetch(`${API_BASE}/api/auth/sync`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
