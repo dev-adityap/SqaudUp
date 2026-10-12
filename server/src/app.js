@@ -4,7 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const createError = require('http-errors');
-const { CLIENT_URL } = require('./config/env');
+const { CLIENT_URLS } = require('./config/env');
 const errorHandler = require('./middleware/errorHandler');
 
 // IMPORT OUR NEW ROUTES HERE
@@ -13,7 +13,10 @@ const routes = require('./routes');
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: CLIENT_URL, credentials: true }));
+app.use(cors({
+  origin: CLIENT_URLS,
+  credentials: true
+}));
 app.use(express.json({ limit: '100kb' }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
