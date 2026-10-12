@@ -21,6 +21,7 @@
     "http-errors": "^2.0.1",
     "mongoose": "^9.10.2",
     "morgan": "^1.12.1",
+    "nodemailer": "^10.1.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {

@@ -3,6 +3,7 @@ const gameService = require('../services/gameService');
 const attendanceService = require('../services/attendanceService');
 const { requireMongoUser } = gameService;
 const { toPublicUser } = require('../utils/publicUser');
+const { sendEmail } = require('../utils/sendEmail');
 
 exports.getGames = async (req, res, next) => {
   try {
@@ -28,12 +29,45 @@ exports.createGame = async (req, res, next) => {
 
 // The acting user comes from the verified token, so a caller can no longer
 // join or eject a game on someone else's behalf.
+// The acting user comes from the verified token, so a caller can no longer
+// join or eject a game on someone else's behalf.
 exports.joinGame = async (req, res, next) => {
   try {
     const user = await requireMongoUser(req.user.uid);
     const updatedGame = await gameService.joinGame(req.params.id, user);
+
+    // --- EMAIL NOTIFICATION BLOCK ---
+    try {
+      // Populate the host data so we can access their email address
+      await updatedGame.populate('hostId', 'email username');
+      
+      if (updatedGame.hostId && updatedGame.hostId.email) {
+        console.log(`Attempting to send email to host: ${updatedGame.hostId.email}`);
+        
+        await sendEmail({
+          to: updatedGame.hostId.email,
+          subject: `New Player Joined: ${updatedGame.title || 'Your Match'}`,
+          html: `
+            <div style="font-family: sans-serif; padding: 20px; background-color: #0f0f13; color: white; border-radius: 10px;">
+              <h2 style="color: #ff5500;">New Squad Member!</h2>
+              <p><b>@${user.username}</b> just joined your <b>${updatedGame.sport || 'Sports'}</b> match.</p>
+              <p>Check your dashboard to see the updated squad list.</p>
+            </div>
+          `
+        });
+      } else {
+        console.log("Could not send email: Host email missing from populated game.");
+      }
+    } catch (emailError) {
+      console.error("Failed to trigger email block:", emailError);
+    }
+    // --------------------------------
+
+    // Send the final response to the frontend
     res.json({ success: true, data: { ...updatedGame.toObject(), currentUserId: user._id.toString() } });
-  } catch (err) { next(err); }
+  } catch (err) { 
+    next(err); 
+  }
 };
 
 exports.leaveGame = async (req, res, next) => {

@@ -3,6 +3,7 @@ const Game = require('../data/models/Game');
 const User = require('../data/models/User');
 const logger = require('../utils/logger');
 const { toPublicUser } = require('../utils/publicUser');
+const { sendEmail } = require('../utils/sendEmail');
 
 // Resolve the Mongo User behind a verified Firebase uid. 401 if not provisioned.
 async function requireMongoUser(uid) {
@@ -56,7 +57,7 @@ class GameService {
 
   // userId is always the authenticated user's own Mongo id. Never client-supplied.
   async joinGame(gameId, userDoc) {
-    const game = await Game.findById(gameId);
+    const game = await Game.findById(gameId).populate('hostId', 'email username');
     if (!game) throw createError(404, 'Game not found', { code: 'GAME_NOT_FOUND' });
 
     const uid = userDoc._id.toString();
@@ -71,7 +72,27 @@ class GameService {
     game.players.push(userDoc._id);
     game.openSlots = Math.max(0, game.openSlots - 1);
     game.status = game.openSlots === 0 ? 'FULL' : 'OPEN';
-    return await game.save();
+    const savedGame = await game.save();
+
+    // Send email notification to host (non-blocking)
+    if (game.hostId?.email) {
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #2563eb;">New Squad Member!</h2>
+          <p><strong>@${userDoc.username}</strong> just joined your <strong>${savedGame.sport}</strong> match: <em>${savedGame.title}</em>.</p>
+          <p>Get ready to play!</p>
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;" />
+          <p style="color: #6b7280; font-size: 12px;">SquadUp - Your game, your squad.</p>
+        </div>
+      `;
+      sendEmail({
+        to: game.hostId.email,
+        subject: `New player joined your ${savedGame.sport} match!`,
+        html,
+      }).catch((err) => console.error('Email notification failed:', err.message));
+    }
+
+    return savedGame;
   }
 
   async leaveGame(gameId, userDoc) {
