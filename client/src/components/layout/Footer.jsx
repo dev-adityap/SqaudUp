@@ -21,7 +21,7 @@ export default function Footer() {
           <div className="lg:col-span-4">
             <h4 className="text-white font-bold uppercase tracking-wider text-sm mb-6">The Origin Story</h4>
             <p className="text-neutral-400 text-sm leading-relaxed">
-              SquadUp was built out of pure frustration. I was tired of wanting to play, but having to cancel because I couldn't find enough homies to field a team. This platform bridges that gap. Join a space, squad up with locals who share your passion, and get in the game. 
+              SquadUp was built to eliminate the frustration of pickup games falling apart due to flaky players. We connect verified local athletes so you never play short.
             </p>
           </div>
 
@@ -58,7 +58,7 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-neutral-800 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
-          <p>© 2026 SQAUDUP. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} SquadUp. All rights reserved.</p>
           <div className="flex gap-6">
             <Link to="#" className="hover:text-white transition">Privacy Policy</Link>
             <Link to="#" className="hover:text-white transition">Terms of Service</Link>

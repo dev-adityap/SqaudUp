@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bell, Plus } from 'lucide-react';
+import { Bell, Menu, Plus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Logo } from '../Logo';
+import MobileNav from './MobileNav';
 
 export default function Navbar() {
   const { currentUser } = useAuth();
   const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
     { name: 'EXPLORE', path: '/explore' },
@@ -16,12 +18,29 @@ export default function Navbar() {
     { name: 'PLAYERS', path: '/players' },
   ];
 
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-black/80 backdrop-blur-md border-b border-neutral-800 h-20 flex items-center">
+    <>
+      <nav className="fixed top-0 left-0 w-full z-50 bg-black/80 backdrop-blur-md border-b border-neutral-800 h-20 flex items-center">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex justify-between items-center">
         
-        {/* Logo */}
-        <Logo size="md" />
+        {/* Logo (clickable — returns home) + mobile hamburger */}
+        <div className="flex items-center gap-1">
+          <Logo size="md" />
+          <button
+            type="button"
+            onClick={() => setMobileOpen((prev) => !prev)}
+            className="lg:hidden p-2 text-neutral-300 hover:text-white transition"
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileOpen}
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        </div>
 
         {/* Desktop Nav */}
         <div className="hidden lg:flex items-center gap-1 bg-[#0f0f13] border border-neutral-800 p-1 rounded-full">
@@ -69,5 +88,14 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
+
+    {/* Mobile drawer — rendered outside <nav> so the navbar's backdrop-blur
+        doesn't create a containing block that traps the fixed-position drawer */}
+    <MobileNav
+      isOpen={mobileOpen}
+      onClose={() => setMobileOpen(false)}
+      links={navLinks.map((link) => ({ label: link.name, path: link.path }))}
+    />
+    </>
   );
 }

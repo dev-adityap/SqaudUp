@@ -46,7 +46,7 @@ export default function App() {
     <ToastProvider>
       <AuthProvider>
         <GamesProvider>
-          <div className="min-h-screen bg-[#08080a] text-neutral-100 flex flex-col justify-between">
+          <div className="min-h-screen bg-[#08080a] text-neutral-100 flex flex-col justify-between overflow-x-hidden">
             <Navbar />
             <main className="grow">
               <Routes>
