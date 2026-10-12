@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import WeatherBadge from '../components/WeatherBadge';
 import {
   Shield, MessageSquare, Users, ArrowLeft, MapPin, Check, X, Loader2, UserPlus,
+  Footprints, Droplet, Shirt, Package,
 } from 'lucide-react';
 import { apiFetch, API_BASE } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +21,27 @@ const getEquipment = (sport) => {
   return ['Water Bottle', 'Sportswear', 'Appropriate Footwear'];
 };
 
+const GEAR_ICONS = {
+  'Turf Boots / Studs': Footprints,
+  'Spiked Shoes': Footprints,
+  'Basketball Shoes': Footprints,
+  'Non-marking Shoes': Footprints,
+  'Court Shoes': Footprints,
+  'Appropriate Footwear': Footprints,
+  'Shin Guards': Shield,
+  'Abdo Guard (L-Guard)': Shield,
+  'Water Bottle': Droplet,
+  'Team Jersey (Dark/Light)': Shirt,
+  Sportswear: Shirt,
+  'Kit Bag': Package,
+  'Cricket Bat': Package,
+  Racquet: Package,
+  Shuttlecocks: Package,
+  'Tennis Balls': Package,
+  Towel: Package,
+  'Grip Powder': Package,
+};
+
 export default function GameSpacePage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -33,6 +55,14 @@ export default function GameSpacePage() {
   const [chatInput, setChatInput] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [savingPlayerId, setSavingPlayerId] = useState(null);
+  // Packing checklist state, keyed per space and persisted so a reload keeps ticks.
+  const [gearChecked, setGearChecked] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`gear_${id}`)) || {};
+    } catch {
+      return {};
+    }
+  });
   const [messages, setMessages] = useState([
     { id: 1, sender: 'SquadUp AI', text: 'Welcome to the match space! I am your AI coordinator. Ask me about weather, tactics, or match rules.', isAi: true },
   ]);
@@ -57,6 +87,16 @@ export default function GameSpacePage() {
     loadSpace();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  const toggleGear = (item) => {
+    setGearChecked((prev) => {
+      const next = { ...prev, [item]: !prev[item] };
+      try {
+        localStorage.setItem(`gear_${id}`, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -171,12 +211,47 @@ export default function GameSpacePage() {
               <Shield className="w-4 h-4 text-[#ff5500]" /> Required Gear
             </h3>
             <ul className="space-y-2">
-              {getEquipment(detail.sport).map((item, idx) => (
-                <li key={idx} className="flex items-center gap-3 text-sm text-neutral-300 bg-neutral-900/50 p-2.5 rounded-lg border border-neutral-800/50">
-                  <input type="checkbox" className="accent-[#ff5500] w-4 h-4 rounded border-neutral-700" />
-                  {item}
-                </li>
-              ))}
+              {getEquipment(detail.sport).map((item, idx) => {
+                const GearIcon = GEAR_ICONS[item] || Package;
+                const packed = !!gearChecked[item];
+                return (
+                  <li key={idx}>
+                    <label
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors w-full border ${
+                        packed
+                          ? 'bg-[#ff5500]/10 border-[#ff5500]/50'
+                          : 'bg-neutral-900/50 border-neutral-800/50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={packed}
+                        onChange={() => toggleGear(item)}
+                        className="sr-only"
+                      />
+                      <span
+                        className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 transition-colors ${
+                          packed ? 'bg-[#ff5500] border-[#ff5500]' : 'border-neutral-600'
+                        }`}
+                      >
+                        {packed && <Check className="w-3.5 h-3.5 text-white" />}
+                      </span>
+                      <GearIcon
+                        className={`w-4 h-4 shrink-0 transition-colors ${
+                          packed ? 'text-[#ff5500]' : 'text-neutral-500'
+                        }`}
+                      />
+                      <span
+                        className={`text-sm font-semibold transition-colors ${
+                          packed ? 'text-white' : 'text-neutral-300'
+                        }`}
+                      >
+                        {item}
+                      </span>
+                    </label>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 

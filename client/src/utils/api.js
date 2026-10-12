@@ -1,6 +1,10 @@
 import { auth } from '../config/firebase';
 
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Trim any trailing slash so a value like "https://api.onrender.com/" cannot
+// produce double-slash paths such as "//api/games".
+export const API_BASE = (
+  import.meta.env.VITE_API_URL || 'http://localhost:5000'
+).replace(/\/+$/, '');
 
 // Safely gets the token without crashing if the user state is still loading
 const getToken = async (forceRefresh = false) => {

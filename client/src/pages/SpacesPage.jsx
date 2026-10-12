@@ -14,7 +14,16 @@ export default function SpacesPage() {
   const handleLeave = async (e, game) => {
     e.preventDefault();
     e.stopPropagation();
-    const ok = await leaveGame(game._id);
+
+    if (!game) return;
+
+    const gameId = game._id || game.id;
+    if (!gameId) {
+      toast.error('This game is missing its id. Refresh and try again.');
+      return;
+    }
+
+    const ok = await leaveGame(gameId);
     if (ok) toast.info(`You left ${game.title}.`);
   };
 

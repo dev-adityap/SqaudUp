@@ -123,7 +123,7 @@ export default function GameCard({ game }) {
               }`}
             >
               {pending && <Loader2 className="w-3 h-3 animate-spin" />}
-              {hosting ? 'Hosting' : joined ? 'Joined ✓' : 'Join Game'}
+              {hosting ? 'Hosting' : pending ? 'Joining...' : joined ? 'Joined ✓' : 'Join Game'}
             </button>
           </div>
         </div>

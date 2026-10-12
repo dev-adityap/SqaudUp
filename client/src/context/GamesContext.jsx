@@ -59,6 +59,17 @@ export function GamesProvider({ children }) {
   const setPending = (id, value) =>
     setPendingIds((prev) => ({ ...prev, [id]: value }));
 
+  // Removes the entry entirely. Note setPending(id, null) is NOT equivalent:
+  // isPending() uses !!pendingIds[id], and keying null under the real id
+  // must be avoided by deleting the key so the id stops matching.
+  const clearPending = (id) =>
+    setPendingIds((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+
   // Merge a server response back into the list so every page updates at once.
   const mergeGame = useCallback((updated) => {
     setGames((prev) => {
@@ -100,7 +111,7 @@ export function GamesProvider({ children }) {
       toast.error(err.message || 'Could not join this game.');
       return false;
     } finally {
-      setPending(null);
+      clearPending(gameId);
     }
   }, [currentUser, games, meId, mergeGame, toast]);
 
@@ -129,7 +140,7 @@ export function GamesProvider({ children }) {
       toast.error(err.message || 'Could not leave this game.');
       return false;
     } finally {
-      setPending(null);
+      clearPending(gameId);
     }
   }, [currentUser, games, meId, mergeGame, toast]);
 
