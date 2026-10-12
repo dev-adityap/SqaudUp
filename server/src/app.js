@@ -4,7 +4,6 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const createError = require('http-errors');
-const { CLIENT_URLS } = require('./config/env');
 const errorHandler = require('./middleware/errorHandler');
 
 // IMPORT OUR NEW ROUTES HERE
@@ -13,8 +12,23 @@ const routes = require('./routes');
 const app = express();
 
 app.use(helmet());
+// Explicit allowlist. Requests without an Origin header (mobile apps, curl,
+// server-to-server) are permitted; browser origins must match exactly.
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://sqaud-up-s4at.vercel.app'
+];
+
 app.use(cors({
-  origin: CLIENT_URLS,
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // 403 (not a generic Error) so the error handler returns a clean,
+      // non-500 response instead of logging a stack trace.
+      callback(createError(403, 'Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '100kb' }));
