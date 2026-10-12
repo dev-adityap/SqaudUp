@@ -2,6 +2,10 @@ import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { Link } from 'react-router-dom';
+import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch';
+import 'leaflet-geosearch/dist/geosearch.css';
+import { useMap } from 'react-leaflet';
+import { useEffect } from 'react';
 
 // Fix for default Leaflet marker icons breaking in Vite build tools
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
@@ -20,23 +24,58 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
+// Leaflet geosearch control: attaches a place-search bar to the map and
+// automatically flies the map to the selected location.
+function MapSearchControl() {
+  const map = useMap();
+
+  useEffect(() => {
+    const provider = new OpenStreetMapProvider();
+
+    const searchControl = new GeoSearchControl({
+      provider,
+      style: 'bar',
+      showMarker: true,
+      showPopup: false,
+      autoClose: true,
+      keepResult: true,
+      retainZoomLevel: false,
+      animateZoom: true,
+      updateMap: true,
+    });
+
+    map.addControl(searchControl);
+
+    return () => {
+      map.removeControl(searchControl);
+    };
+  }, [map]);
+
+  return null;
+}
+
 export default function GameMap({ games }) {
   // Default map center (Adjust coordinates to your region if needed, e.g., local city center)
   const defaultCenter = [22.5726, 88.3639]; 
 
   return (
-    <div className="w-full h-[600px] rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl relative z-10">
-      <MapContainer 
-        center={defaultCenter} 
-        zoom={13} 
-        scrollWheelZoom={false}
-        style={{ height: '100%', width: '100%', background: '#0f0f13' }}
+    <div className="w-full h-[70vh] rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl relative z-10">
+      <MapContainer
+        center={defaultCenter}
+        zoom={13}
+        dragging={true}
+        scrollWheelZoom={true}
+        touchZoom={true}
+        doubleClickZoom={true}
+        style={{ height: '70vh', width: '100%', background: '#0f0f13' }}
       >
-        {/* Dark CartoDB tile layer matching your SquadUp theme (free, no API key required) */}
-       <TileLayer
-  url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-  attribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
-/>
+        {/* Mapbox Dark tile layer (premium theme, uses VITE_MAPBOX_TOKEN from .env) */}
+        <TileLayer
+          attribution='Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, Imagery &copy; <a href="https://www.mapbox.com/">Mapbox</a>'
+          url={`https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/{z}/{x}/{y}@2x?access_token=${import.meta.env.VITE_MAPBOX_TOKEN}`}
+        />
+
+        <MapSearchControl />
 
         {games.map((game) => {
           const coords = game.location?.coordinates;

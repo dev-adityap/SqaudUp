@@ -41,3 +41,43 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #3f3f4e;
 }
+
+/* --- LEAFLET GEOSEARCH CUSTOM SQUADUP STYLING --- */
+
+/* 1. Make the typed text black so it's visible on the white bar */
+.leaflet-control-geosearch form input {
+  color: #000000 !important;
+  outline: none !important;
+}
+
+/* 2. Round the corners and add a shadow to the main search bar */
+.leaflet-control-geosearch form {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
+  border: none !important;
+  padding: 2px !important;
+}
+
+/* 3. Style the dropdown results to match the app's dark theme */
+.leaflet-control-geosearch .results {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  margin-top: 8px !important;
+  border: 1px solid #333 !important;
+  overflow: hidden !important;
+}
+
+/* 4. Style each individual search result row */
+.leaflet-control-geosearch .results > * {
+  padding: 10px 15px !important;
+  border-bottom: 1px solid #333 !important;
+  transition: background-color 0.2s ease;
+}
+
+/* 5. Add the SquadUp Orange hover effect to the search results */
+.leaflet-control-geosearch .results > *:hover {
+  background-color: #ff5500 !important;
+  color: #ffffff !important;
+  cursor: pointer;
+}
