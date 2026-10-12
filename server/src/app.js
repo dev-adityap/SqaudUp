@@ -12,16 +12,19 @@ const routes = require('./routes');
 const app = express();
 
 app.use(helmet());
-// Explicit allowlist. Requests without an Origin header (mobile apps, curl,
-// server-to-server) are permitted; browser origins must match exactly.
-const allowedOrigins = [
-  'http://localhost:5173',
-  'https://sqaud-up-s4at.vercel.app'
-];
+// Allow: requests with no Origin (mobile apps, curl, server-to-server),
+// local dev servers, and any vercel.app domain (production + preview deploys).
+const VERCEL_ORIGIN = /^https:\/\/(?:[a-z0-9-]+\.)*vercel\.app$/i;
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (origin.startsWith('http://localhost')) return true;
+  return VERCEL_ORIGIN.test(origin);
+};
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
     } else {
       // 403 (not a generic Error) so the error handler returns a clean,
